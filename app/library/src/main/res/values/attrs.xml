@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name = "textView">
+		<attr name ="textSize" format ="dimension"/>
+		<attr name="textColor" format ="color"/>
+		<attr name="lineNumbColor" format="color"/>
+		<attr name="text" format="string"/>
+		<attr name="scrollable" format="boolean"/>
+		<attr name="lineNumber" format="boolean"/>
+		<attr name="wordWarp" format="boolean"/>
+	</declare-styleable>
+</resources>
