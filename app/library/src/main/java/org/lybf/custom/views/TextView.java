@@ -66,8 +66,6 @@ public class TextView extends View {
 
 	private LineCharacterEditable mEditable = new LineCharacterEditable();
 
-	private Scroller scroller;
-
 
 
 	private OnScrollChangedListener onScrollChangedListener;
@@ -117,11 +115,7 @@ public class TextView extends View {
 
 	private int mMaximumVelocity;
 
-	private int mOverscrollDistance;
-
-	private int mOverflingDistance;
-
-	private float mVerticalScrollFactor;
+	
 
 
 	public void setScrollable(boolean scrollable) {
@@ -161,7 +155,6 @@ public class TextView extends View {
 		super(context, attrs, defStyleAttr, defStyleRes);
 		this.mEditable = new LineCharacterEditable();
 		this.mContext = context;
-		this.scroller = new Scroller(context, new AccelerateDecelerateInterpolator());
 		try {
 			TypedArray typeArray = context.obtainStyledAttributes(attrs, R.styleable.textView, defStyleAttr, defStyleRes);
 			this.textSize = typeArray.getDimension(R.attr.textSize, default_textSize);
@@ -192,10 +185,6 @@ public class TextView extends View {
 		this.mTouchSlop = configuration.getScaledTouchSlop();
 		this.mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
 		this.mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
-		this.mOverscrollDistance = configuration.getScaledOverscrollDistance();
-		this.mOverflingDistance = configuration.getScaledOverflingDistance();
-		this.mVerticalScrollFactor = configuration.getScaledVerticalScrollFactor();
-
 	}
 
 
@@ -214,7 +203,42 @@ public class TextView extends View {
 		this.mEditable.refeshWidth();
 		this.FontHeight = getFontHeight();
 	}
+	public float getTextSize(){
+		return textSize;
+	}
+	
+	public void setBackgroundColor2(int backgroundColor2) {
+		this.backgroundColor2 = backgroundColor2;
+	}
 
+	public int getBackgroundColor2() {
+		return backgroundColor2;
+	}
+
+	public void setBackgroundColor(int backgroundColor) {
+		this.backgroundColor = backgroundColor;
+	}
+
+	public int getBackgroundColor() {
+		return backgroundColor;
+	}
+
+	public void setLineNumberColor(int lineNumberColor) {
+		this.lineNumberColor = lineNumberColor;
+	}
+
+	public int getLineNumberColor() {
+		return lineNumberColor;
+	}
+
+	public void setTextColor(int textColor) {
+		this.textColor = textColor;
+	}
+
+	public int getTextColor() {
+		return textColor;
+	}
+	
 	private int getMaxDisplayLine() {
 		this.maxDisplayLine = (int) Math.ceil((this.getHeight() / this.getFontHeight()));
 		return maxDisplayLine;
@@ -254,39 +278,25 @@ public class TextView extends View {
 			invalidate();
 	}
 
-	public void loadText(String filePath,ITextViewListener listener){
-		
+	public void loadText(String filePath, ITextViewListener listener) {
+
 	}
 
 
-	/*
-	* @Override
-	* protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-	*   int width = MeasureSpec.getSize(widthMeasureSpec);
-	*   int height = MeasureSpec.getSize(heightMeasureSpec);
-	*   int line = mEditable.getLineCount();
-	*   float lineHeight = line * getFontHeight();
-	*   float lineWidth = mEditable.getTextWidth();
-	*   width = (int)Math.max(width, lineWidth);
-	*   height = (int)Math.max(height, lineHeight);
-	*   setMeasuredDimension(width, height);
-	* }
-	 */
-
-	 private float lastX,lastY,lastX2,lastY2;
-	 public void analysisTouchEvent(MotionEvent event){
-		 int action = event.getActionMasked();
-		 switch(action){
-			 case MotionEvent.ACTION_DOWN:
-				 lastX = event.getX(0);
-				 lastY = event.getY(0);
-				 lastX2 = event.getX(1);
-				 lastY2 = event.getY(1);
-				 break;
+	private float lastX,lastY,lastX2,lastY2;
+	public void analysisTouchEvent(MotionEvent event) {
+		int action = event.getActionMasked();
+		switch (action) {
+			case MotionEvent.ACTION_DOWN:
+				lastX = event.getX(0);
+				lastY = event.getY(0);
+				lastX2 = event.getX(1);
+				lastY2 = event.getY(1);
+				break;
 			case MotionEvent.ACTION_MOVE:
 				break;
-		 }
-	 }
+		}
+	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
@@ -295,8 +305,6 @@ public class TextView extends View {
 		this.mVelocityTracker.addMovement(event);
 		switch (action) {
 			case MotionEvent.ACTION_DOWN:
-				if (!scroller.isFinished())
-					forceFinished();
 				this.lastDownX = event.getX();
 				this.lastDownY = event.getY();
 				this.lastDownRawX = event.getRawX();
@@ -317,11 +325,10 @@ public class TextView extends View {
 				if (!lockSlide) {
 					if (Math.abs(vY) * 3 > Math.abs(vX)) {
 						this.slideMode = Direction.VERTICAL;
-						this.lockSlide = true;
 					} else {
 						this.slideMode = Direction.ORIZONTAL;
-						this.lockSlide = true;
 					}
+					this.lockSlide = true;
 				}
 				if (lockSlide && scrollable) {
 					if (slideMode == Direction.ORIZONTAL) {
@@ -336,23 +343,18 @@ public class TextView extends View {
 				this.mVelocityTracker.computeCurrentVelocity(1000);
 				float vX2 = mVelocityTracker.getXVelocity();
 				float vY2 = mVelocityTracker.getYVelocity();
+				//判断是否滑动
 				if ((Math.abs(vX2) > mMinimumVelocity && Math.abs(vY2) > mMinimumVelocity)) {
 					if (lockSlide && scrollable) {
 						if (slideMode == Direction.VERTICAL) {
 							if ((vY2 < 0))
 								this.direction = Direction.UP;
 							else direction = Direction.DOWN;
-							this.vX =  (int)(lastDownX + getX());
-							this.vY = 0;
-							//fling((int)ScrollX, (int)ScrollY, 0, (int)vY2 / 10, 0, 0, 0, 1000);
 						} else if (slideMode == Direction.ORIZONTAL) {
 							if ((vX2 < 0))
 								this.direction = Direction.LEFT;
 							else direction = Direction.RIGHT;
-							this.vY = (int)(lastDownY - getY());
-							//fling((int)ScrollX, (int)ScrollY, (int)vX2 / 10, 0, 0, 1000, 0, 0);
 						}
-						//fling();
 					}
 				}
 				recycleVelocityTracker();
@@ -360,36 +362,8 @@ public class TextView extends View {
 		}
 		return true;
 	}
-	private float vX;
 
-	private float vY;
 
-	private void fling() {
-		getHandler().post(new Runnable() {
-				@Override
-				public void run() {
-					if (Math.abs(vX) >= 0.1 && Math.abs(vY) >= 0.1) {
-						if (slideMode == Direction.ORIZONTAL)
-							ScrollX += vX;
-						else
-							ScrollY += vY;
-						checkScroll();
-						vX *= 0.98f;
-						vY *= 0.98f;
-						invalidate();
-						getHandler().post(this);
-					}
-				}
-			});
-	}
-	private void fling(int startX, int startY, int velocityX, int velocityY, int minX, int maxX, int minY, int maxY) {
-		//	scroller.fling(startX, startY, velocityX, velocityY, minX, maxX, minY, maxY);
-		invalidate();
-	}
-
-	private void forceFinished() {
-		scroller.forceFinished(true);
-	}
 	private void initVelocityTrackerIfNotExists() {
 		if (mVelocityTracker == null) {
 			this.mVelocityTracker = VelocityTracker.obtain();
@@ -533,19 +507,15 @@ public class TextView extends View {
 	private void checkScroll() {
 		if (ScrollX < 0) {
 			this.ScrollX = 0;
-			forceFinished();
 		}
 		if (ScrollX > (mEditable.getTextWidth() + 10)) {
 			this.ScrollX = mEditable.getTextWidth() + 10;
-			forceFinished();
 		}
 		if (ScrollY < 0) {
 			this.ScrollY = 0;
-			forceFinished();
 		}
 		if (ScrollY > mEditable.getLineCount() * FontHeight + 10) {
 			this.ScrollY = mEditable.getLineCount() * FontHeight + 10;
-			forceFinished();
 		}
 		invalidate();
 	}
