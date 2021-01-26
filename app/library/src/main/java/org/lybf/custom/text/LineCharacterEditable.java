@@ -6,13 +6,19 @@ import java.util.stream.IntStream;
 
 public class LineCharacterEditable implements CharSequence {
 
+
+
+
 	private ArrayList<LineCharacter> lines = new ArrayList<LineCharacter>();
 
+    
 	private Paint mPaint;
 
 	private float maxWidth;
 
 	private Position maxWidthPos;
+
+    private int lastModifiedHashCode;
 
 	public LineCharacterEditable() {
 
@@ -20,6 +26,13 @@ public class LineCharacterEditable implements CharSequence {
 
 	public LineCharacterEditable(String string) {
 		append(string);
+	}
+
+	public LineCharacterEditable(LineCharacterEditable line) {
+		this.lines = line.lines;
+		this.mPaint = line.mPaint;
+		this.maxWidth = line.maxWidth;
+		this.maxWidthPos = line.maxWidthPos;
 	}
 
 	public void setTextWidth(float width) {
@@ -39,23 +52,41 @@ public class LineCharacterEditable implements CharSequence {
 		append(string);
 	}
 
-	public LineCharacterEditable append(String string) {
-		if (string == null) {
-			lines.add(new LineCharacter("null"));
-			return this;
-		}
 
-		String[] strs = string.split(System.lineSeparator());
-		for (String s : strs) {
-			LineCharacter line = new LineCharacter(s);
-			float w = line.measureWidth(mPaint);
-			if (maxWidth < w) {
-				maxWidth = w;
-			}
-			lines.add(line);
-		}
-		return this;
+
+	public LineCharacterEditable append(String text) {
+        if (text == null) {
+            lines.add(new LineCharacter("null"));
+            return this;
+        }
+
+        String[] strs = text.split("\n");//System.lineSeparator());
+        // if (strs.length > 1) {
+        for (String s : strs) {
+            LineCharacter line = new LineCharacter(s);
+            float w = line.measureWidth(mPaint);
+            if (maxWidth < w) {
+                maxWidth = w;
+            }
+            lines.add(line);
+        }
+        /*} else {
+         int len = getLineCount();
+         LineCharacter lastLine ;
+         if (len > 0)lastLine = getLine(lines.size() - 1);
+         else lastLine = new LineCharacter("");
+         lastLine.append(text);
+         lines.add(lastLine);
+
+         }*/
+        return this;
 	}
+
+    public LineCharacterEditable newLine(){
+        lines.add(new LineCharacter());
+        return this;
+    }
+
 
 	public int getLineCount() {
 		return lines.size();
@@ -66,6 +97,7 @@ public class LineCharacterEditable implements CharSequence {
 	}
 
 	private void initWidth() {    
+		if (mPaint == null)return;
 		for (int i = 0; i < getLineCount() ; i++) {
 			maxWidth = Math.max(maxWidth, getLine(i).measureWidth(mPaint));
 		}
@@ -113,18 +145,19 @@ public class LineCharacterEditable implements CharSequence {
 	}
 
 
-	public LineCharacterEditable insert() {
-		return this;
-	}
-
-
 	public LineCharacterEditable replace(int position, String string) {
 		return replace(position, position, string);
 	}
+
 	public LineCharacterEditable replace(int start, int end, String string) {
 		Position pos = getPosition(start);
 		Position pos2 = getPosition(end);
+		String[] strs = string.split(System.lineSeparator());
 		if (pos.line == pos2.line) {
+			if (strs.length > 0) {
+
+			}
+		} else {
 
 		}
 		return this;
@@ -136,6 +169,10 @@ public class LineCharacterEditable implements CharSequence {
 		maxWidthPos = null;
 		return this;
 	}
+
+    private void p() {
+        lastModifiedHashCode = lines.hashCode();
+    }
 
 	public ArrayList<LineCharacter> getLines(int start, int end) {
 		ArrayList<LineCharacter> lines2= new ArrayList<LineCharacter>();
@@ -152,6 +189,10 @@ public class LineCharacterEditable implements CharSequence {
 		return lines.get(index);
 	}
 
+	private boolean hasLineSeparator(String string) {
+		return string.contains(System.lineSeparator());
+	}
+
 	public Position getPosition(int index) {
 		int posi = -1;
 		int lin = 0;
@@ -164,6 +205,10 @@ public class LineCharacterEditable implements CharSequence {
 			}
 			lin++;
 		}
+        /*
+         int len = length();
+         if (index > 0)return new Position(getLineCount(), len);
+         */
 		return new Position(-1, -1);
 	}
 

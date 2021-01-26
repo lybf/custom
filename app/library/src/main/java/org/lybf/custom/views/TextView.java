@@ -5,18 +5,24 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.Parcelable;
 import android.text.Editable;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
-import android.widget.Scroller;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import org.lybf.custom.R;
 import org.lybf.custom.annation.Param;
@@ -64,9 +70,12 @@ public class TextView extends View {
 
 	private final Context mContext;
 
-	private LineCharacterEditable mEditable = new LineCharacterEditable();
+	private LineCharacterEditable mEditable ;
 
 
+	private Configuration config = new Configuration();
+
+    private GestureDetector mGestureDetector;
 
 	private OnScrollChangedListener onScrollChangedListener;
 
@@ -82,6 +91,7 @@ public class TextView extends View {
 	private int backgroundColor2 = default_backgroundColor2;
 
 
+    // offset coordinates
 	private float ScrollX = 0,ScrollY = 0;
 	private float lastScrollX = 0,lastScrollY = 0;
 	private float lastDownX,lastDownY;
@@ -115,7 +125,7 @@ public class TextView extends View {
 
 	private int mMaximumVelocity;
 
-	
+	private boolean canEdit = false;
 
 
 	public void setScrollable(boolean scrollable) {
@@ -125,9 +135,6 @@ public class TextView extends View {
 	public boolean isScrollable() {
 		return scrollable;
 	}
-
-
-
 
 
 	public enum Direction {
@@ -155,9 +162,10 @@ public class TextView extends View {
 		super(context, attrs, defStyleAttr, defStyleRes);
 		this.mEditable = new LineCharacterEditable();
 		this.mContext = context;
+        this.mGestureDetector = new GestureDetector(context, mSimpleGestureListener);
 		try {
 			TypedArray typeArray = context.obtainStyledAttributes(attrs, R.styleable.textView, defStyleAttr, defStyleRes);
-			this.textSize = typeArray.getDimension(R.attr.textSize, default_textSize);
+			this.textSize = typeArray.getFloat(R.attr.textSize, default_textSize);
 			this.textColor = typeArray.getColor(R.attr.textColor, default_textColor);
 			this.lineNumberColor = typeArray.getColor(R.attr.lineNumbColor, default_lineNumberColor);
 			this.mEditable.setText("" + typeArray.getString(R.attr.text));
@@ -203,12 +211,13 @@ public class TextView extends View {
 		this.mEditable.refeshWidth();
 		this.FontHeight = getFontHeight();
 	}
-	public float getTextSize(){
+	public float getTextSize() {
 		return textSize;
 	}
-	
+
 	public void setBackgroundColor2(int backgroundColor2) {
 		this.backgroundColor2 = backgroundColor2;
+		invalidate();
 	}
 
 	public int getBackgroundColor2() {
@@ -217,6 +226,7 @@ public class TextView extends View {
 
 	public void setBackgroundColor(int backgroundColor) {
 		this.backgroundColor = backgroundColor;
+		super.setBackgroundColor(backgroundColor);
 	}
 
 	public int getBackgroundColor() {
@@ -238,7 +248,7 @@ public class TextView extends View {
 	public int getTextColor() {
 		return textColor;
 	}
-	
+
 	private int getMaxDisplayLine() {
 		this.maxDisplayLine = (int) Math.ceil((this.getHeight() / this.getFontHeight()));
 		return maxDisplayLine;
@@ -263,6 +273,14 @@ public class TextView extends View {
 		return this.mEditable;
 	}
 
+    public void setText(@Param(Name="LineCharacterEditable") LineCharacterEditable editable){
+        this.mEditable = editable;
+        this.scrollTo(0, 0);
+        this.lastScrollX = 0;
+        this.lastScrollY = 0;
+        invalidate();   
+    }
+    
 	public void setText(@Param(Name="String")String string) {
 		this.scrollTo(0, 0);
 		this.lastScrollX = 0;
@@ -274,14 +292,55 @@ public class TextView extends View {
 
 	public void append(@Param(Name="String")String string) {
 		this.mEditable.append(string);
+        // invalidate();
 		if (getLastLine() < mEditable.getLineCount())
 			invalidate();
 	}
 
+    /*
+     *
+     * Use this method to load a .txt if text to big(size > 1mb);
+     */
 	public void loadText(String filePath, ITextViewListener listener) {
 
 	}
 
+    private Handler loadHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+        }
+    };
+
+    private class LoadThread extends Thread {
+        private String filePath;
+
+        public LoadThread(String  filePath) {
+            this.filePath = filePath;
+        }
+        @Override
+        public void run() {
+
+            LineCharacterEditable editable = new LineCharacterEditable();
+            try {
+                File file = new File(filePath);
+                if (file.exists()) {
+                    FileReader read = new FileReader(file.getPath());
+                    BufferedReader br = new BufferedReader(read);
+                    String s;
+                    while ((s = br.readLine()) != null) {
+                        editable.append(s);
+                    }
+                    setText(editable);
+                }
+            } catch (Exception e) {
+
+            }
+        }
+    }
+	protected void canEdit(boolean bool) {
+		this.canEdit = bool;
+	}
 
 	private float lastX,lastY,lastX2,lastY2;
 	public void analysisTouchEvent(MotionEvent event) {
@@ -298,10 +357,12 @@ public class TextView extends View {
 		}
 	}
 
+
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		int action = event.getAction();
 		initVelocityTrackerIfNotExists();
+
 		this.mVelocityTracker.addMovement(event);
 		switch (action) {
 			case MotionEvent.ACTION_DOWN:
@@ -343,25 +404,93 @@ public class TextView extends View {
 				this.mVelocityTracker.computeCurrentVelocity(1000);
 				float vX2 = mVelocityTracker.getXVelocity();
 				float vY2 = mVelocityTracker.getYVelocity();
+                mHandler.removeCallbacks(mflingRunnable);
 				//判断是否滑动
 				if ((Math.abs(vX2) > mMinimumVelocity && Math.abs(vY2) > mMinimumVelocity)) {
 					if (lockSlide && scrollable) {
 						if (slideMode == Direction.VERTICAL) {
-							if ((vY2 < 0))
+							if ((vY2 < 0)) {
 								this.direction = Direction.UP;
-							else direction = Direction.DOWN;
+							} else {
+                                direction = Direction.DOWN;
+                            }
+                            mSpeedY = -vY2;
+                            mSpeedX = 0;
 						} else if (slideMode == Direction.ORIZONTAL) {
-							if ((vX2 < 0))
+							if ((vX2 < 0)) {
 								this.direction = Direction.LEFT;
-							else direction = Direction.RIGHT;
+							} else {
+                                direction = Direction.RIGHT;
+                            }
+                            mSpeedX = -vX2;
+                            mSpeedY = 0;
 						}
 					}
+                    mHandler.postDelayed(mflingRunnable, 33);
 				}
 				recycleVelocityTracker();
 				break;
 		}
 		return true;
 	}
+
+    private float mSpeedX,mSpeedY;
+    private Handler mHandler = new Handler();
+    private Runnable mflingRunnable = new Runnable(){
+        @Override
+        public void run() {
+            ScrollX = ScrollX + mSpeedX / 30;
+            ScrollY = ScrollY + mSpeedY / 30;
+            mSpeedX *= 0.97;
+            mSpeedY *= 0.97;
+            if (Math.abs(mSpeedX) < 10) {
+                mSpeedX = 0;
+            }
+            if (Math.abs(mSpeedY) < 10) {
+                mSpeedY = 0;
+            }
+            checkScroll();
+            if (mSpeedX == 0 && mSpeedY == 0) {
+                mHandler.removeCallbacks(this);
+                return;
+            }
+
+            mHandler.postDelayed(this, 33);
+        }
+
+    };
+
+    private GestureDetector.SimpleOnGestureListener mSimpleGestureListener = new SimpleOnGestureListener(){
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+
+            return super.onFling(e1, e2, velocityX, velocityY);
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            return super.onScroll(e1, e2, distanceX, distanceY);
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return super.onDown(e);
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+            super.onLongPress(e);
+        }
+
+
+    };
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		return super.onKeyDown(keyCode, event);
+	}
+
 
 
 	private void initVelocityTrackerIfNotExists() {
@@ -387,9 +516,10 @@ public class TextView extends View {
 	}
 
 
+
 	private void drawLineNumber(Canvas canvas) {
 		if (!showLineNumber)return;
-		this.lineNumberWidth = - mPaint.measureText("" + mEditable.getLineCount()) + 5;
+		this.lineNumberWidth = - mPaint.measureText("" + mEditable.getLineCount()) - 10;
 		Paint p = new Paint();
 		p.setColor(backgroundColor2);
 		canvas.drawRect(-ScrollX, 0, -(lineNumberWidth + ScrollX), getHeight(), p);
@@ -410,15 +540,27 @@ public class TextView extends View {
 		ArrayList<LineCharacter> lines =  mEditable.getLines(first, last + 2);
 		float offset = -ScrollY % FontHeight;
 		int curr = 0;
+		int currLine = last;
 		for (LineCharacter line : lines) {
 			canvas.drawText(line.toString(), 
 							/* X */-(lineNumberWidth + ScrollX), 
 							/*  Y */curr * getFontHeight() + offset,
 							/* Paint */mTextPaint);
 			curr++;
+			currLine++;
 		}
 		canvas.save();
 	}
+
+	private void drawTextBackground(int line) {
+		float offset = -ScrollY % FontHeight;
+
+	}
+
+	private void drawSelected() {
+
+	}
+
 
 	@Override
 	protected Parcelable onSaveInstanceState() {
@@ -569,5 +711,34 @@ public class TextView extends View {
 
 	}
 
+	public class Configuration {
+		public Cursor2 cursor = new Cursor2();
 
+	}
+
+
+	public class SelectedControl {
+		public int firstSelectedPosition;
+		public int lastSelectedPosition;
+		public LineCharacterEditable editable ;
+
+		public SelectedControl(LineCharacterEditable editable) {
+			this.editable = editable;
+		}
+		public SelectedControl nextPosition(int offset) {
+			lastSelectedPosition += offset;
+			return this;
+		}
+	}
+
+
+	public static class Cursor2 {
+		public int startLine;
+		public int endLine;
+		public int startPosition;
+		public int endPosition;
+		public static Cursor2 build() {
+			return new Cursor2();
+		}
+	}
 }

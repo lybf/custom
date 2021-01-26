@@ -16,7 +16,7 @@ import zhuyuguang.com.verticalseekbar.view.VerticalSeekBar;
 
 public class MainActivity extends Activity { 
 
-	TextView tv;
+	private TextView tv;
 
 	private EditText edit;
 
@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
 		load.setOnClickListener(new OnClickListener(){
 				@Override
 				public void onClick(View p1) {
+                    System.out.println("load");
 					try {
 						Editable editable = edit.getText();
 						if (editable.toString() != null) {
@@ -76,8 +77,10 @@ public class MainActivity extends Activity {
 								while ((s = br.readLine()) != null) {
 									//System.out.println(s);
 									tv.append(s);
+                                    System.out.println("lineCount=" + tv.getText().getLineCount());
 								}
-								verticalSeekBar.setMaxProgress(tv.getText().getLineCount());
+                                int line = tv.getText().getLineCount();
+								verticalSeekBar.setMaxProgress(line > 0 ?line: 100);
 								System.out.println("success\n\n");
 							}
 						}

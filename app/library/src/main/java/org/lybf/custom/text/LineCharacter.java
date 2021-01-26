@@ -1,22 +1,25 @@
 package org.lybf.custom.text;
-import java.util.stream.IntStream;
 import android.graphics.Paint;
+import java.util.stream.IntStream;
 
 public class LineCharacter implements CharSequence {
 
-	private String raw;
+	private StringBuffer raw;
+
 
 	public LineCharacter() {
-		raw = "";
+		raw = new StringBuffer("");
 	}
 
 
 	public LineCharacter(String raw) {
-		this.raw = raw;
+		this.raw = new StringBuffer(raw);
 	}
 
+
+
 	public float measureWidth(Paint paint) {
-		return paint.measureText(raw);
+		return paint.measureText(raw.toString());
 	}
 
 	@Override
@@ -34,18 +37,45 @@ public class LineCharacter implements CharSequence {
 		return raw.subSequence(start, end);
 	}
 
-	public LineCharacter replace(int start, int end, String string) {
-		raw = new StringBuilder("")
-			.append(subSequence(0, start))
-			.append(string)
-			.append(subSequence(end, length()))
-			.toString();
+    
+	public void append(String text) {
+		raw.append(text);
+	}
+
+	public LineCharacter insert(int index, String text) {
+		//raw.insert(index, StringBuffer);
 		return this;
+	}
+	public LineCharacter replace(int start, int end, String text) {
+		raw.replace(start, end, text);
+		return this;
+	}
+	public LineCharacter delete(int index) {
+		return delete(index, index);
+	}
+	public LineCharacter delete(int start, int end) {
+		raw.delete(start, end);
+		return this;
+	}
+	public int indexOf(String str) {
+		return raw.indexOf(str);
+	}
+
+    public int indexOf(String str, int fromIndex) {
+		return raw.indexOf(str, fromIndex);
+	}
+
+    public int lastIndexOf(String str) {
+		return raw.lastIndexOf(str);
+	}
+
+    public int lastIndexOf(String str, int fromIndex) {
+		return raw.lastIndexOf(str, fromIndex);
 	}
 
 	@Override
 	public String toString() {
-		return raw;
+		return raw.toString();
 	}
 
 
