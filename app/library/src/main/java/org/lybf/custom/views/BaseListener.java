@@ -1,8 +1,17 @@
 package org.lybf.custom.views;
 import org.lybf.custom.lang.CustomException;
 
-public class BsseListener implements ITextViewListener ,ILineCharacterEditableChangeListener,
-OnScrollChangedListener,TextChangeListener {
+public class BaseListener implements ITextViewListener ,ILineCharacterEditableChangeListener,
+OnScrollChangedListener,TextChangeListener,ILoadTextListener {
+
+    @Override
+    public void success(TextView view) {
+    }
+
+    @Override
+    public void failed(String msg, Exception e) {
+    }
+    
 
     @Override
     public void append(String string, int start, int end) {

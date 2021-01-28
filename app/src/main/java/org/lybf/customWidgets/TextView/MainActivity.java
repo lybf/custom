@@ -13,6 +13,7 @@ import java.io.FileReader;
 import org.lybf.custom.views.OnScrollChangedListener;
 import org.lybf.custom.views.TextView;
 import zhuyuguang.com.verticalseekbar.view.VerticalSeekBar;
+import org.lybf.custom.views.BaseListener;
 
 public class MainActivity extends Activity { 
 
@@ -69,19 +70,12 @@ public class MainActivity extends Activity {
 						if (editable.toString() != null) {
 							File file = new File(editable.toString());
 							if (file.exists()) {
-								tv.setText("");
-								FileReader read = new FileReader(file.getPath());
-								BufferedReader br = new BufferedReader(read);
-								String s;
-								System.out.println("readFile");
-								while ((s = br.readLine()) != null) {
-									//System.out.println(s);
-									tv.append(s);
-                                    System.out.println("lineCount=" + tv.getText().getLineCount());
-								}
-                                int line = tv.getText().getLineCount();
-								verticalSeekBar.setMaxProgress(line > 0 ?line: 100);
-								System.out.println("success\n\n");
+								//tv.setText("");
+                                tv.loadText(editable.toString(),new BaseListener(){
+                                    
+                                });
+                                
+								
 							}
 						}
 					} catch (Exception e ) {

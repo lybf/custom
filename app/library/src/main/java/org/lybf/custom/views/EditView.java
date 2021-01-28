@@ -4,11 +4,11 @@ import android.content.Context;
 public class EditView extends TextView{
     private final Context context;
 
-	public EditView(Context context) {
-		super(context);
-		this.context = context;
-		canEdit(true);
-	}
+    public EditView(Context context) {
+        super(context);
+        this.context = context;
+        canEdit(true);
+    }
     
     
 }
